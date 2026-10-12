@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Kalaidoskope — Build the AI First Marketing Organisation</title>
+<link rel="icon" href="assets/logo-mark.png" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;700&family=IBM+Plex+Serif:wght@400;700&family=Libre+Caslon+Text:wght@400;700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="site.css" />
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel" src="tweaks_panel.jsx"></script>
+<script type="text/babel" src="components.jsx"></script>
+<script type="text/babel" src="home.jsx"></script>
+<script type="text/babel" src="home2.jsx"></script>
+<script type="text/babel" src="pages.jsx"></script>
+<script type="text/babel" src="about.jsx"></script>
+<script type="text/babel" src="team.jsx"></script>
+<script type="text/babel" src="academy-extras.jsx"></script>
+<script type="text/babel" src="academy.jsx"></script>
+<script type="text/babel" src="talent-scenario.jsx"></script>
+<script type="text/babel" src="talent-interactive.jsx"></script>
+<script type="text/babel" src="talent-roles.jsx"></script>
+<script type="text/babel" src="talent.jsx"></script>
+<script type="text/babel" src="enterprise-demos.jsx"></script>
+<script type="text/babel" src="enterprise.jsx"></script>
+<script type="text/babel">
+const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
+  "theme": "light",
+  "hero": "kaleidoscope",
+  "headline": "train",
+  "serif": "Source Serif 4",
+  "pageGrounds": true
+}/*EDITMODE-END*/;
+
+const SERIFS = {
+  'Source Serif 4': "'Source Serif 4', serif",
+  'Libre Caslon': "'Libre Caslon Text', serif",
+  'IBM Plex Serif': "'IBM Plex Serif', serif",
+};
+
+// Swap placeholders for generated imagery by filling these paths.
+const IMGS = {
+  home: { who: [], cases: [] },
+  about: { team: [] },
+  talent: {},
+  academy: { aud: [], trainers: [] },
+};
+
+function useRoute() {
+  const get = () => (location.hash.replace(/^#/, '') || '/');
+  const [r, setR] = React.useState(get());
+  React.useEffect(() => {
+    const on = () => setR(get());
+    window.addEventListener('hashchange', on);
+    return () => window.removeEventListener('hashchange', on);
+  }, []);
+  return r;
+}
+
+function App() {
+  const [t, setTweak] = useTweaks(TWEAK_DEFAULTS);
+  const route = useRoute();
+
+  // Each section of the site gets its own ground: Academy = Mist, Talent = Moonlight Indigo
+  const pageKey = route.replace('/', '') || 'home';
+  const PAGE_GROUND = { academy: 'mist', talent: 'indigo', enterprise: 'gold' };
+  const effTheme = (t.pageGrounds && t.theme === 'light' && PAGE_GROUND[pageKey]) || t.theme;
+  document.documentElement.setAttribute('data-theme', effTheme);
+  document.documentElement.setAttribute('data-page', pageKey);
+  React.useEffect(() => {
+    document.documentElement.style.setProperty('--serif', SERIFS[t.serif] || SERIFS['Source Serif 4']);
+  }, [t.theme, t.serif]);
+
+  React.useEffect(() => {
+    localStorage.setItem('kal-route', route);
+    // Gold = AI. Academy & Talent stay blue-only.
+    if (route === '/academy' || route === '/talent') document.documentElement.setAttribute('data-nogold', '');
+    else document.documentElement.removeAttribute('data-nogold');
+  }, [route]);
+  React.useEffect(() => {
+    if (!location.hash) { const saved = localStorage.getItem('kal-route'); if (saved && saved !== '/') location.hash = saved; }
+  }, []);
+
+  useReveal(route + t.hero);
+
+  let page;
+  switch (route) {
+    case '/about': page = <AboutPage imgs={IMGS.about} />; break;
+    case '/talent': page = <TalentPage imgs={IMGS.talent} />; break;
+    case '/academy': page = <AcademyPage imgs={IMGS.academy} />; break;
+    case '/enterprise': page = <EnterprisePage />; break;
+    case '/contact': page = <ContactPage />; break;
+    default: page = <HomePage hero={t.hero} copy={t.headline} imgs={IMGS.home} />;
+  }
+
+  return (
+    <>
+      <div className="gold-edge"></div>
+      <Nav route={route} dark={effTheme === 'indigo'} />
+      <div key={route + t.hero}>{page}</div>
+      <Footer />
+      <TweaksPanel>
+        <TweakSection label="Homepage hero">
+          <TweakRadio label="Direction" value={t.hero} options={[{ value: 'editorial', label: 'A · Editorial' }, { value: 'kaleidoscope', label: 'B · Kaleidoscope' }]} onChange={(v) => { setTweak('hero', v); if (route !== '/') go('/'); }} />
+          <TweakSelect label="Headline" value={t.headline} options={[{ value: 'train', label: 'Train marketers. Place talent. Automate the busywork.' }, { value: 'outcomes', label: 'Better marketers. The right hires. Hours back every week.' }, { value: 'everything', label: 'Learn marketing, hire marketers and give your team time back.' }]} onChange={(v) => { setTweak('headline', v); if (route !== '/') go('/'); }} />
+        </TweakSection>
+        <TweakSection label="Colour mode">
+          <TweakRadio label="Ground" value={t.theme} options={[{ value: 'light', label: 'White' }, { value: 'mist', label: 'Mist' }, { value: 'indigo', label: 'Indigo' }]} onChange={(v) => setTweak('theme', v)} />
+        </TweakSection>
+        <TweakSection label="Page grounds">
+          <TweakToggle label="Distinct ground per page (Academy mist · Talent indigo)" value={t.pageGrounds} onChange={(v) => setTweak('pageGrounds', v)} />
+        </TweakSection>
+        <TweakSection label="Headline serif (Timeless stand-in)">
+          <TweakSelect label="Typeface" value={t.serif} options={Object.keys(SERIFS)} onChange={(v) => setTweak('serif', v)} />
+        </TweakSection>
+      </TweaksPanel>
+    </>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>
